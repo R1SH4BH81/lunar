@@ -8,6 +8,7 @@ import os
 import sys
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 import torch
 # Neutralize torch.classes path inspection by Streamlit's local sources watcher
