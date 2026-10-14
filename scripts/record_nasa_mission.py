@@ -28,7 +28,7 @@ def record_nasa_mission(
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file {model_path} not found.")
 
-    model = PPO.load(model_path)
+    model = PPO.load(model_path, device="cpu")
     env = gym.make("LunarLander-v3")
     renderer = NASALunarRenderer(width=800, height=600)
 

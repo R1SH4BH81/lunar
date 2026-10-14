@@ -58,9 +58,9 @@ class LunarSwarmFleet:
         self.n_ships = n_ships
         self.renderer = NASALunarRenderer(width=width, height=height)
         
-        # Load available models
-        self.baseline_model = PPO.load(baseline_model_path) if os.path.exists(baseline_model_path) else None
-        self.hover_model = PPO.load(hover_model_path) if os.path.exists(hover_model_path) else None
+        # Load available models (force CPU)
+        self.baseline_model = PPO.load(baseline_model_path, device="cpu") if os.path.exists(baseline_model_path) else None
+        self.hover_model = PPO.load(hover_model_path, device="cpu") if os.path.exists(hover_model_path) else None
 
         self.ships: List[SwarmShip] = []
         for i in range(n_ships):

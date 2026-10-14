@@ -10,7 +10,7 @@ from scripts.train import train
 from scripts.evaluate import evaluate_model
 from scripts.compare_experiments import compare_all
 
-def run_pipeline(device: str = "auto"):
+def run_pipeline(device: str = "cpu"):
     print("=" * 70)
     print("STARTING END-TO-END REWARD SHAPING & BENCHMARK PIPELINE")
     print("=" * 70)
@@ -69,7 +69,7 @@ def run_pipeline(device: str = "auto"):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run full Lunar Lander reward shaping experiments pipeline")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Compute device (auto, cuda, cpu)")
+    parser.add_argument("--device", type=str, default="cpu", choices=["auto", "cuda", "cpu"], help="Compute device (auto, cuda, cpu)")
     args = parser.parse_args()
 
     run_pipeline(device=args.device)

@@ -54,7 +54,7 @@ def train(
     n_envs: int = 8,
     save_dir: str = "models",
     log_dir: str = "logs",
-    device: str = "auto",
+    device: str = "cpu",
     resume: bool = False
 ):
     import torch
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--timesteps", type=int, default=350_000, help="Total timesteps")
     parser.add_argument("--n_envs", type=int, default=8, help="Number of parallel environments")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Compute device (auto, cuda, cpu)")
+    parser.add_argument("--device", type=str, default="cpu", choices=["auto", "cuda", "cpu"], help="Compute device (auto, cuda, cpu)")
     parser.add_argument("--resume", action="store_true", help="Resume training from existing checkpoint if available")
     args = parser.parse_args()
 

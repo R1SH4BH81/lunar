@@ -8,6 +8,12 @@ Allows users to:
 """
 
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
+import torch
+# Neutralize torch.classes path inspection by Streamlit's local sources watcher
+torch.classes.__path__ = []
+
 import sys
 import numpy as np
 import pandas as pd

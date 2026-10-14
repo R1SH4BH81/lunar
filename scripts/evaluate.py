@@ -36,7 +36,7 @@ def evaluate_model(
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found at: {model_path}")
 
-    model = PPO.load(model_path)
+    model = PPO.load(model_path, device="cpu")
     renderer = NASALunarRenderer(width=800, height=600) if render_video else None
 
     # Base env
