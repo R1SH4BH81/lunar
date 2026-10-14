@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Lunar Descent | RL & Reward Shaping Research</title>
+    <meta name="description" content="Empirical study and mathematical resolution of reward hacking in Deep Reinforcement Learning for lunar soft landings with Proximal Policy Optimization (PPO).">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for crisp mathematical formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Starfield & Nebula Canvas -->
+    <canvas id="starfield-canvas"></canvas>
+
+    <!-- Navigation Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="brand">
+                <span class="brand-orbit"></span>
+                <span class="brand-title">LUNAR-RL</span>
+                <span class="brand-badge">RESEARCH PAPER</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#regimes">Flight Regimes</a>
+                <a href="#swarm">Fleet Swarm</a>
+                <a href="#simulator">Live Sandbox</a>
+                <a href="#mathematics">Theory</a>
+                <a href="#benchmarks">Benchmarks</a>
+                <a href="#reproduce" class="nav-btn">Run Experiment</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="overview">
+        <div class="hero-content">
+            <div class="meta-pill-group">
+                <span class="meta-pill"><span class="status-dot green"></span>GYMNASIUM v3</span>
+                <span class="meta-pill">PROXIMAL POLICY OPTIMIZATION (PPO)</span>
+                <span class="meta-pill">POTENTIAL-BASED REWARD SHAPING</span>
+            </div>
+            
+            <h1 class="hero-title">
+                Autonomous Lunar Descent &amp;<br>
+                <span class="text-gradient">The Reward Hacking Trap</span>
+            </h1>
+            
+            <p class="hero-lead">
+                An empirical study on reward specification failure in planetary lander control, demonstrating how naive shaping creates infinite hovering exploits and proving policy invariance via Ng et al. (1999) potential theory.
+            </p>
+
+            <div class="hero-cta-group">
+                <a href="#regimes" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Compare 4 Flight Regimes
+                </a>
+                <a href="#simulator" class="btn btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                    Interactive Flight Sandbox
+                </a>
+                <a href="#reproduce" class="btn btn-ghost">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Quickstart CLI
+                </a>
+            </div>
+
+            <!-- Key Metric Cards -->
+            <div class="hero-metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-label">SOLVED TOUCHDOWN RATE</span>
+                    <div class="metric-val">100%</div>
+                    <div class="metric-sub">PPO Baseline &amp; PBRS</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">HOVER EXPLOIT RETURN</span>
+                    <div class="metric-val alert">+665.9</div>
+                    <div class="metric-sub">Farmed until 1,000 cutoff</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">POLICY CONVERGENCE</span>
+                    <div class="metric-val">200k</div>
+                    <div class="metric-sub">Timesteps under 8 parallel envs</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">SWARM COORDINATION</span>
+                    <div class="metric-val">16 Ships</div>
+                    <div class="metric-sub">Simultaneous real-time Box2D</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Flight Regimes Gallery -->
+    <section class="section" id="regimes">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">BEHAVIORAL TAXONOMY</span>
+                <h2 class="section-title">The Four Flight Regimes</h2>
+                <p class="section-desc">Comparing learned agent policies across different reward functions in identical initial boundary conditions.</p>
+            </div>
+
+            <!-- Regime Filter Buttons -->
+            <div class="regime-tabs">
+                <button class="regime-tab-btn active" data-regime="all">All Regimes (Grid)</button>
+                <button class="regime-tab-btn" data-regime="baseline">1. Solved Baseline</button>
+                <button class="regime-tab-btn" data-regime="hover">2. Hover Hack Exploit</button>
+                <button class="regime-tab-btn" data-regime="pbrs">3. Potential Shaped</button>
+                <button class="regime-tab-btn" data-regime="random">4. Random Policy</button>
+            </div>
+
+            <div class="regimes-grid">
+                <!-- Card 1: Baseline -->
+                <div class="regime-card" data-category="baseline">
+                    <div class="card-media-wrapper">
+                        <img src="recordings/baseline_landing.gif" alt="PPO Baseline Solved Landing" loading="lazy">
+                        <span class="card-badge badge-success">SOLVED POLICY (>200 PTS)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-heading">
+                            <h3>Baseline PPO Policy</h3>
+                            <span class="mono-tag">Gymnasium LunarLander-v3</span>
+                        </div>
+                        <p>Trained strictly with standard distance, velocity, and tilt penalties. Learns smooth parabolic deceleration and soft touchdown squarely between the flagpoles.</p>
+                        <div class="card-telemetry">
+                            <div><span class="k">Mean Score:</span> <span class="v">+204.0 pts</span></div>
+                            <div><span class="k">Landing Rate:</span> <span class="v">100.0%</span></div>
+                            <div><span class="k">Mean Duration:</span> <span class="v">585 steps</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Hover Hack -->
+                <div class="regime-card alert-card" data-category="hover">
+                    <div class="card-media-wrapper">
+                        <img src="recordings/hover_hack_flight.gif" alt="Hover Hacked Perpetual Flight" loading="lazy">
+                        <span class="card-badge badge-warning">REWARD HACK EXPLOIT (+665 PTS)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-heading">
+                            <h3>Hover Hack Exploitation</h3>
+                            <span class="mono-tag">Naive Static Bonus (+1.0/frame)</span>
+                        </div>
+                        <p>Intended to teach the rocket to stay upright and slow. Instead, the AI realizes landing terminates the episode early (+250 total), whereas hovering perpetually until the 1,000-frame cutoff yields +665 points.</p>
+                        <div class="card-telemetry">
+                            <div><span class="k">Mean Score:</span> <span class="v alert">+665.9 pts</span></div>
+                            <div><span class="k">Landing Rate:</span> <span class="v alert">0.0% (Refuses)</span></div>
+                            <div><span class="k">Mean Duration:</span> <span class="v alert">1,000 steps (Max)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Potential-Based Shaping -->
+                <div class="regime-card" data-category="pbrs">
+                    <div class="card-media-wrapper">
+                        <img src="recordings/potential_shaped_landing.gif" alt="Potential Shaped Fix" loading="lazy">
+                        <span class="card-badge badge-cyan">THE MATHEMATICAL FIX (PBRS)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-heading">
+                            <h3>Potential-Based Shaping</h3>
+                            <span class="mono-tag">Ng et al. (1999) Theorem</span>
+                        </div>
+                        <p>Auxiliary potential difference $\gamma \Phi(s') - \Phi(s)$ mathematically guarantees policy invariance. Hovering yields zero incremental bonus, while a -0.15 step cost eliminates fuel stalling.</p>
+                        <div class="card-telemetry">
+                            <div><span class="k">Mean Duration:</span> <span class="v">352 steps (Fast)</span></div>
+                            <div><span class="k">Hover Exploit:</span> <span class="v">0% (Eliminated)</span></div>
+                            <div><span class="k">Policy Invariance:</span> <span class="v">Preserved</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Random Crash -->
+                <div class="regime-card" data-category="random">
+                    <div class="card-media-wrapper">
+                        <img src="recordings/random_agent_crash.gif" alt="Random Agent Crash" loading="lazy">
+                        <span class="card-badge badge-danger">RANDOM UNGUIDED (-130 PTS)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-heading">
+                            <h3>Random Policy Crash</h3>
+                            <span class="mono-tag">Uniform Stochastic Sampling</span>
+                        </div>
+                        <p>Unguided thruster firing fails to counter lunar gravity or dampen aerodynamic momentum, leading to uncontrolled angular tumbling and catastrophic ground impact.</p>
+                        <div class="card-telemetry">
+                            <div><span class="k">Mean Score:</span> <span class="v danger">-130.4 pts</span></div>
+                            <div><span class="k">Ground Impact:</span> <span class="v danger">100.0%</span></div>
+                            <div><span class="k">Descent Velocity:</span> <span class="v danger">> 1.5 m/s</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NASA Apollo Mission Telemetry HUD Section -->
+    <section class="section hud-section">
+        <div class="section-container">
+            <div class="hud-box">
+                <div class="hud-header">
+                    <div class="hud-title-wrap">
+                        <span class="hud-indicator pulse"></span>
+                        <h3 class="hud-title">APOLLO PGNCS TELEMETRY THEATER &bull; LZ-1 BASE ALPHA</h3>
+                    </div>
+                    <span class="hud-sub">RECORDING EVALUATION OVER DETERMINISTIC SEED 1010</span>
+                </div>
+                
+                <div class="hud-layout">
+                    <div class="hud-display-container">
+                        <img src="recordings/lunar_mission_landing.gif" alt="Apollo Lunar Mission Telemetry HUD" class="hud-video">
+                    </div>
+                    <div class="hud-telemetry-panel">
+                        <h4 class="telemetry-panel-title">LIVE TELEMETRY CHANNELS</h4>
+                        <div class="hud-gauge">
+                            <span class="gauge-name">ALTITUDE (H)</span>
+                            <span class="gauge-value" id="hud-alt">0.00 M</span>
+                        </div>
+                        <div class="hud-gauge">
+                            <span class="gauge-name">DESCENT RATE (H-DOT)</span>
+                            <span class="gauge-value" id="hud-vdot">-0.02 M/S</span>
+                        </div>
+                        <div class="hud-gauge">
+                            <span class="gauge-name">LATERAL RATE (X-DOT)</span>
+                            <span class="gauge-value" id="hud-xdot">0.01 M/S</span>
+                        </div>
+                        <div class="hud-gauge">
+                            <span class="gauge-name">INCLINATION (THETA)</span>
+                            <span class="gauge-value" id="hud-theta">0.00 DEG</span>
+                        </div>
+                        <div class="hud-status-lights">
+                            <div class="status-light-item active-green">
+                                <span class="light-pip green"></span>
+                                <span>CONTACT LIGHT</span>
+                            </div>
+                            <div class="status-light-item active-blue">
+                                <span class="light-pip blue"></span>
+                                <span>PGNCS AUTO</span>
+                            </div>
+                            <div class="status-light-item">
+                                <span class="light-pip red"></span>
+                                <span>1202 ALARM</span>
+                            </div>
+                        </div>
+                        <div class="hud-mission-notes">
+                            <p>Touchdown score: <strong>+265.4 pts</strong>. Soft landing confirmed on primary pads with both leg switches engaged and zero residual pitch.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Autonomous Lunar Swarm Fleet -->
+    <section class="section" id="swarm">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">MULTI-AGENT COORDINATION</span>
+                <h2 class="section-title">Autonomous Lunar Swarm Descent</h2>
+                <p class="section-desc">Simulating simultaneous descents of up to 16 Apollo Lunar Modules onto LZ-1, mixing Solved PGNCS Aces, Hover Exploiters, and Trainee Explorers.</p>
+            </div>
+
+            <div class="swarm-viewer-card">
+                <div class="swarm-media-col">
+                    <img id="swarm-active-img" src="recordings/lunar_swarm_fleet.gif" alt="Lunar Swarm Fleet Descent">
+                    <div class="swarm-overlay-badge" id="swarm-badge-label">12 Ships &bull; Fleet Deployment</div>
+                </div>
+
+                <div class="swarm-controls-col">
+                    <h3 class="swarm-col-title">Fleet Deployment Selector</h3>
+                    <p class="swarm-col-desc">Select active fleet size to examine how multiple agent policies navigate shared airspace and regolith plumes:</p>
+
+                    <div class="fleet-selector-grid">
+                        <button class="fleet-btn" data-ships="4" data-src="recordings/swarm_custom_4.gif">
+                            <span class="fleet-count">4 Ships</span>
+                            <span class="fleet-desc">Tight Formation</span>
+                        </button>
+                        <button class="fleet-btn" data-ships="6" data-src="recordings/swarm_custom_6.gif">
+                            <span class="fleet-count">6 Ships</span>
+                            <span class="fleet-desc">Standard Flight</span>
+                        </button>
+                        <button class="fleet-btn active" data-ships="12" data-src="recordings/lunar_swarm_fleet.gif">
+                            <span class="fleet-count">12 Ships</span>
+                            <span class="fleet-desc">Full Fleet Swarm</span>
+                        </button>
+                        <button class="fleet-btn" data-ships="16" data-src="recordings/swarm_custom_16.gif">
+                            <span class="fleet-count">16 Ships</span>
+                            <span class="fleet-desc">High Density Grid</span>
+                        </button>
+                    </div>
+
+                    <div class="fleet-composition-breakdown">
+                        <h4 class="subhead">Fleet Policy Distribution</h4>
+                        <div class="comp-bar">
+                            <div class="comp-segment ace" style="width: 50%" title="50% PGNCS Aces (Solved)"></div>
+                            <div class="comp-segment hack" style="width: 25%" title="25% Hover Exploiters"></div>
+                            <div class="comp-segment train" style="width: 25%" title="25% Trainee Units"></div>
+                        </div>
+                        <div class="comp-legend">
+                            <div><span class="legend-dot ace"></span> 50% Solved Aces (PGNCS)</div>
+                            <div><span class="legend-dot hack"></span> 25% Hover Exploiters</div>
+                            <div><span class="legend-dot train"></span> 25% Trainee Explorers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive In-Browser Physics Sandbox -->
+    <section class="section" id="simulator">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">INTERACTIVE SANDBOX</span>
+                <h2 class="section-title">In-Browser Lunar Flight Simulator</h2>
+                <p class="section-desc">Experience the control dynamics directly in your browser. Pilot the lander with manual thrusters or engage Neural Autopilot to see PPO guidance in real time.</p>
+            </div>
+
+            <div class="sandbox-container">
+                <div class="canvas-wrapper">
+                    <canvas id="lunar-sim-canvas" width="760" height="460"></canvas>
+                    <div id="sim-touchdown-banner" class="sim-banner hidden">
+                        <span id="banner-text">TOUCHDOWN CONFIRMED! (+240 PTS)</span>
+                    </div>
+                </div>
+
+                <div class="sandbox-controls">
+                    <div class="sim-mode-toggle">
+                        <button id="mode-manual" class="btn-toggle active">Manual Pilot</button>
+                        <button id="mode-autopilot" class="btn-toggle">Neural Autopilot (PPO)</button>
+                    </div>
+
+                    <div class="sim-telemetry-readout">
+                        <div class="tel-row">
+                            <span>ALTITUDE (Y):</span>
+                            <span id="sim-alt" class="mono">100.0 m</span>
+                        </div>
+                        <div class="tel-row">
+                            <span>VERTICAL VEL (VY):</span>
+                            <span id="sim-vy" class="mono">-1.20 m/s</span>
+                        </div>
+                        <div class="tel-row">
+                            <span>HORIZONTAL VEL (VX):</span>
+                            <span id="sim-vx" class="mono">0.00 m/s</span>
+                        </div>
+                        <div class="tel-row">
+                            <span>PITCH ANGLE:</span>
+                            <span id="sim-angle" class="mono">0.0&deg;</span>
+                        </div>
+                        <div class="tel-row">
+                            <span>FUEL REMAINING:</span>
+                            <span id="sim-fuel" class="mono">100%</span>
+                        </div>
+                    </div>
+
+                    <div class="manual-keys-help">
+                        <div class="key-item"><kbd>&uarr;</kbd> or <kbd>W</kbd> : Main Engine Thruster</div>
+                        <div class="key-item"><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> or <kbd>A</kbd> / <kbd>D</kbd> : Orientation Thrusters</div>
+                    </div>
+
+                    <div class="sim-button-row">
+                        <button id="btn-fire-left" class="btn btn-secondary btn-sm">&larr; Left Thruster</button>
+                        <button id="btn-fire-main" class="btn btn-primary btn-sm">Main Engine</button>
+                        <button id="btn-fire-right" class="btn btn-secondary btn-sm">Right Thruster &rarr;</button>
+                        <button id="btn-reset-sim" class="btn btn-ghost btn-sm">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mathematical Specification & Reward Shaping Theory -->
+    <section class="section" id="mathematics">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">MATHEMATICAL FORMULATION</span>
+                <h2 class="section-title">MDP Dynamics &amp; Reward Shaping Theory</h2>
+                <p class="section-desc">Formal derivation of why naive shaping triggers policy hacking and how Potential-Based Reward Shaping guarantees policy invariance.</p>
+            </div>
+
+            <div class="math-grid">
+                <!-- Box 1: Observation & Action Space -->
+                <div class="math-card">
+                    <h3 class="math-card-title">1. The State &amp; Action Space</h3>
+                    <p>The lunar lander is formulated as an episodic Markov Decision Process $\langle \mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma \rangle$ with continuous state vector $s_t \in \mathbb{R}^8$ at 50 Hz:</p>
+                    
+                    <div class="latex-block">
+                        $$s_t = \begin{bmatrix} x & y & v_x & v_y & \theta & \omega & c_{\text{left}} & c_{\text{right}} \end{bmatrix}^T$$
+                    </div>
+
+                    <p>Discrete action space $\mathcal{A} \in \{0, 1, 2, 3\}$:</p>
+                    <ul class="clean-list">
+                        <li><strong>0:</strong> Ballistic inertial drift ($g = -10.0\text{ m/s}^2$).</li>
+                        <li><strong>1:</strong> Fire left orientation nozzle (clockwise torque).</li>
+                        <li><strong>2:</strong> Fire main combustion engine (counteracts gravity; consumes fuel).</li>
+                        <li><strong>3:</strong> Fire right orientation nozzle (counter-clockwise torque).</li>
+                    </ul>
+                </div>
+
+                <!-- Box 2: The Reward Hacking Exploit -->
+                <div class="math-card alert-border">
+                    <h3 class="math-card-title text-alert">2. The Reward Hacking Mechanism</h3>
+                    <p>To incentivize upright posture and controlled descent, practitioners often add a naive step bonus:</p>
+                    <div class="latex-block">
+                        $$R_{\text{shaped}}(s, a) = R_{\text{env}}(s, a) + 1.0 \cdot \mathbb{I}(\text{upright})$$
+                    </div>
+                    <p>Consider the total expected discounted return $J(\pi)$ for two behavioral trajectories:</p>
+                    <div class="latex-block">
+                        $$J(\text{Landing}) = \sum_{t=1}^{T_L \approx 200} R_{\text{env}}(t) + 100 \approx 250\text{ points}$$
+                    </div>
+                    <div class="latex-block">
+                        $$J(\text{Perpetual Hover}) = \sum_{t=1}^{T_{\max} = 1000} (1.0 - \text{fuel}) \approx \mathbf{+665.9\text{ points}}$$
+                    </div>
+                    <p>Because $J(\text{Hover}) \gg J(\text{Landing})$, policy gradient theorem drives the agent to systematically reject landing.</p>
+                </div>
+
+                <!-- Box 3: Ng et al. Potential Shaping Theorem -->
+                <div class="math-card">
+                    <h3 class="math-card-title text-cyan">3. Potential-Based Policy Invariance</h3>
+                    <p>Ng, Harada, and Russell (1999) proved that an additive reward $F(s, a, s')$ guarantees <strong>identical optimal policies</strong> ($\pi^*_{\text{shaped}} = \pi^*_{\text{orig}}$) if and only if:</p>
+                    <div class="latex-block">
+                        $$F(s, a, s') = \gamma \Phi(s') - \Phi(s)$$
+                    </div>
+                    <p>Along any sequence of states from $t=0$ to $T$, the shaping rewards form a telescoping sum:</p>
+                    <div class="latex-block">
+                        $$\sum_{t=0}^{T-1} \gamma^t F(s_t, a_t, s_{t+1}) = -\Phi(s_0) + \gamma^T \Phi(s_T)$$
+                    </div>
+                    <p>For a hovering agent trapped in a limit cycle ($s_{t+1} \approx s_t$), the net shaping return vanishes: $\Phi(s_{t+1}) - \Phi(s_t) \approx 0$. Zero bonus can be farmed.</p>
+                </div>
+
+                <!-- Box 4: Implementation -->
+                <div class="math-card">
+                    <h3 class="math-card-title">4. Exact Python Potential Function</h3>
+                    <p>We define the potential as the negative Euclidean distance to the landing site, penalizing kinetic speed and angular tilt:</p>
+                    <pre class="code-snippet"><code>def get_potential(obs):
+    # obs: [x, y, vx, vy, angle, angular_vel, c_l, c_r]
+    dist = np.sqrt(obs[0]**2 + obs[1]**2)
+    speed = np.sqrt(obs[2]**2 + obs[3]**2)
+    tilt = abs(obs[4])
+    return -(dist + speed + tilt)
+
+# Step-wise shaping transition
+f_shaping = gamma * get_potential(obs_next) - get_potential(obs) - 0.15
+reward = env_reward + f_shaping</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Empirical Benchmark Matrix Section -->
+    <section class="section" id="benchmarks">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">EMPIRICAL BENCHMARKS</span>
+                <h2 class="section-title">Comparative Performance Matrix</h2>
+                <p class="section-desc">Evaluation results compiled over 15 deterministic episodes per regime under PyTorch PPO.</p>
+            </div>
+
+            <div class="benchmark-content-grid">
+                <div class="table-card">
+                    <table class="benchmark-table">
+                        <thead>
+                            <tr>
+                                <th>Reward Regime</th>
+                                <th>Mean Score</th>
+                                <th>Success %</th>
+                                <th>Landed %</th>
+                                <th>Duration</th>
+                                <th>Fuel Burn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge-pill badge-success">Baseline PPO</span></td>
+                                <td class="mono font-bold">+204.0 &plusmn; 62.4</td>
+                                <td class="mono">80.0%</td>
+                                <td class="mono text-green">100.0%</td>
+                                <td class="mono">585 steps</td>
+                                <td class="mono">465.8 pts</td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td><span class="badge-pill badge-warning">Hover Hack (Exploit)</span></td>
+                                <td class="mono font-bold text-alert">+665.9 &plusmn; 24.9</td>
+                                <td class="mono">100.0%*</td>
+                                <td class="mono text-red">0.0%</td>
+                                <td class="mono text-alert">1000 steps</td>
+                                <td class="mono">1000.0 pts</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge-pill badge-cyan">Potential Shaped</span></td>
+                                <td class="mono font-bold">-445.7 &plusmn; 45.7</td>
+                                <td class="mono">0.0%</td>
+                                <td class="mono">0.0%</td>
+                                <td class="mono">352 steps</td>
+                                <td class="mono text-green">243.0 pts</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge-pill badge-danger">Random Agent</span></td>
+                                <td class="mono font-bold text-red">-130.4 &plusmn; 85.1</td>
+                                <td class="mono">0.0%</td>
+                                <td class="mono text-red">0.0%</td>
+                                <td class="mono">94 steps</td>
+                                <td class="mono">0.0 pts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="table-footnote">
+                        *Hover Hack achieves high nominal score (+665.9) strictly by exploiting the +1.0/frame reward flaw without ever touching down.
+                    </div>
+                </div>
+
+                <div class="chart-preview-card">
+                    <img src="recordings/comparison_chart.png" alt="Empirical Benchmark Chart Comparison" class="benchmark-chart-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Observation State Vector Inspector -->
+    <section class="section">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">SENSOR ARCHITECTURE</span>
+                <h2 class="section-title">The 8 Telemetry Observation Channels</h2>
+                <p class="section-desc">Every frame, the policy network receives an 8-dimensional vector from Box2D sensors:</p>
+            </div>
+
+            <div class="sensors-grid">
+                <div class="sensor-card" data-idx="0">
+                    <div class="sensor-idx">OBS[0]</div>
+                    <div class="sensor-name">X Position</div>
+                    <div class="sensor-range">[-1.0, 1.0]</div>
+                    <div class="sensor-desc">Horizontal offset from the center of the landing pad (0.0 is dead-center).</div>
+                </div>
+                <div class="sensor-card" data-idx="1">
+                    <div class="sensor-idx">OBS[1]</div>
+                    <div class="sensor-name">Y Position</div>
+                    <div class="sensor-range">[0.0, 1.4]</div>
+                    <div class="sensor-desc">Altitude above the lunar landing pad (0.0 represents surface contact).</div>
+                </div>
+                <div class="sensor-card" data-idx="2">
+                    <div class="sensor-idx">OBS[2]</div>
+                    <div class="sensor-name">X Velocity (Vx)</div>
+                    <div class="sensor-range">[-Inf, +Inf]</div>
+                    <div class="sensor-desc">Horizontal drift rate. Positive values indicate moving to the right.</div>
+                </div>
+                <div class="sensor-card" data-idx="3">
+                    <div class="sensor-idx">OBS[3]</div>
+                    <div class="sensor-name">Y Velocity (Vy)</div>
+                    <div class="sensor-range">[-Inf, +Inf]</div>
+                    <div class="sensor-desc">Vertical descent rate. Negative values indicate downward fall.</div>
+                </div>
+                <div class="sensor-card" data-idx="4">
+                    <div class="sensor-idx">OBS[4]</div>
+                    <div class="sensor-name">Lander Angle (Theta)</div>
+                    <div class="sensor-range">[-&pi;, +&pi;]</div>
+                    <div class="sensor-desc">Tilt angle in radians (0.0 is vertical; positive is counter-clockwise).</div>
+                </div>
+                <div class="sensor-card" data-idx="5">
+                    <div class="sensor-idx">OBS[5]</div>
+                    <div class="sensor-name">Angular Velocity (Omega)</div>
+                    <div class="sensor-range">[-Inf, +Inf]</div>
+                    <div class="sensor-desc">Rotational spin rate in radians per second.</div>
+                </div>
+                <div class="sensor-card" data-idx="6">
+                    <div class="sensor-idx">OBS[6]</div>
+                    <div class="sensor-name">Left Leg Contact</div>
+                    <div class="sensor-range">{0.0, 1.0}</div>
+                    <div class="sensor-desc">Binary switch confirming physical contact with the lunar surface.</div>
+                </div>
+                <div class="sensor-card" data-idx="7">
+                    <div class="sensor-idx">OBS[7]</div>
+                    <div class="sensor-name">Right Leg Contact</div>
+                    <div class="sensor-range">{0.0, 1.0}</div>
+                    <div class="sensor-desc">Binary switch confirming physical contact with the lunar surface.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quickstart / Reproducibility CLI -->
+    <section class="section" id="reproduce">
+        <div class="section-container">
+            <div class="reproduce-box">
+                <div class="reproduce-info">
+                    <span class="section-tag">REPRODUCIBILITY</span>
+                    <h2 class="section-title">Run Experiments Locally</h2>
+                    <p class="section-desc">Fully reproducible reinforcement learning pipeline running with Gymnasium, Box2D, and Stable-Baselines3 on CPU or CUDA.</p>
+                </div>
+
+                <div class="terminal-mock">
+                    <div class="terminal-bar">
+                        <span class="term-dot red"></span>
+                        <span class="term-dot yellow"></span>
+                        <span class="term-dot green"></span>
+                        <span class="term-title">bash &bull; lunar-landing-repro</span>
+                    </div>
+                    <div class="terminal-content">
+                        <p class="term-line"><span class="prompt">$</span> git clone https://github.com/R1SH4BH81/lunar.git</p>
+                        <p class="term-line"><span class="prompt">$</span> cd lunar &amp;&amp; pip install -r requirements.txt</p>
+                        <p class="term-line"><span class="prompt">$</span> # 1. Launch interactive Streamlit GUI</p>
+                        <p class="term-line"><span class="prompt">$</span> streamlit run app.py</p>
+                        <p class="term-line"><span class="prompt">$</span> # 2. Run end-to-end benchmark pipeline</p>
+                        <p class="term-line"><span class="prompt">$</span> python scripts/run_all_experiments.py --device cpu</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="brand">
+                    <span class="brand-orbit"></span>
+                    <span class="brand-title">LUNAR-RL</span>
+                </div>
+                <p class="footer-desc">Deep Reinforcement Learning &amp; Potential-Based Reward Shaping Lab.</p>
+            </div>
+            <div class="footer-meta">
+                <p>Built with Gymnasium v3, Box2D, PyTorch, and Stable-Baselines3.</p>
+                <p>&copy; 2026 Autonomous Systems &bull; Lunar Landing Research</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+        });
+    </script>
+</body>
+</html>
