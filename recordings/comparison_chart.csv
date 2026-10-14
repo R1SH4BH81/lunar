@@ -1,0 +1,4 @@
+mean_score,std_score,solved_pct,landed_pct,crashed_pct,mean_length,mean_main_fuel,mean_side_fuel,Experiment,Description
+204.01209344851497,62.379573948157585,80.0,100.0,0.0,585.4,241.4,224.4,Baseline,Standard LunarLander-v3 (Default Reward)
+665.9642682251509,24.918490358286363,100.0,0.0,0.0,1000.0,569.2,430.8,Hover_Hack,Reward Hacking (+1.0/frame for hovering slow & upright)
+-445.7179000626467,45.65918987102995,0.0,0.0,100.0,352.0,210.0,33.0,Potential_Shaped,The Fix: Potential-Based Reward Shaping (PBRS)
